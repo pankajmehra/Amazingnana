@@ -1,3 +1,23 @@
+// Google Analytics 4 for Amazing Nana
+(function initGoogleAnalytics() {
+  const measurementId = 'G-W71K9PELRB';
+
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function () {
+    window.dataLayer.push(arguments);
+  };
+
+  window.gtag('js', new Date());
+  window.gtag('config', measurementId, {
+    send_page_view: true
+  });
+
+  const analyticsScript = document.createElement('script');
+  analyticsScript.async = true;
+  analyticsScript.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+  document.head.appendChild(analyticsScript);
+})();
+
 const toggle = document.querySelector('.nav-toggle');
 const links = document.querySelector('.nav-links');
 
@@ -26,7 +46,7 @@ document.querySelectorAll('[data-year]').forEach((el) => {
   el.textContent = new Date().getFullYear();
 });
 
-// Google Analytics event tracking becomes active automatically once gtag is installed.
+// Track Amazon affiliate-link clicks as a GA4 custom event.
 document.addEventListener('click', (event) => {
   const link = event.target.closest('a[href]');
   if (!link || typeof window.gtag !== 'function') return;
