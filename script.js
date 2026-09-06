@@ -47,16 +47,31 @@ document.querySelectorAll('[data-year]').forEach((el) => {
   el.textContent = new Date().getFullYear();
 });
 
+// Keep Amazon shopping buttons visually consistent across the site. Featured
+// products are identified with a badge instead of a different button color.
+document.querySelectorAll('a.btn[href*="amazon.com"], a.btn[href*="amzn.to"]').forEach((button) => {
+  button.classList.remove('btn-primary');
+  button.classList.add('btn-secondary');
+});
+
 // On the Grandma's House checklist, keep the main article visually clean by
 // moving the larger affiliate disclosure to the footer area.
 if (window.location.pathname.endsWith('/things-to-keep-at-grandmas-house.html')) {
   const disclosure = document.querySelector('.shop-note');
   const footerLegal = document.querySelector('.footer .legal');
+  const featuredCard = document.querySelector('.essentials .essential');
+
+  if (featuredCard && !featuredCard.querySelector('.badge')) {
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.textContent = 'Featured pick';
+    featuredCard.prepend(badge);
+  }
 
   if (disclosure && footerLegal) {
     const footerDisclosure = document.createElement('div');
     footerDisclosure.className = 'legal';
-    footerDisclosure.innerHTML = '<strong>Affiliate disclosure:</strong> This page contains Amazon affiliate links. As an Amazon Associate I earn from qualifying purchases, at no extra cost to you. Prices and availability can change. <a href="disclosure.html">Learn more</a>.';
+    footerDisclosure.innerHTML = '<strong>Affiliate disclosure:</strong> This page contains Amazon affiliate links. As an Amazon Associate I earn from qualifying purchases, at no extra cost to you. Prices and availability can change. <a href="disclosure.html" style="display:inline;margin:0">Learn more</a>.';
     footerLegal.before(footerDisclosure);
     disclosure.remove();
   }
