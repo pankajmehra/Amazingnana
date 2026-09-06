@@ -29,12 +29,10 @@
     a.btn[href*="amazon.com"]:hover,a.btn[href*="amzn.to"]:hover{border-color:#d8bde7;box-shadow:0 8px 20px rgba(116,69,117,.10)}
     .footer .brand{display:flex;color:var(--ink);margin:0 0 10px}
     .footer .legal a{display:inline;margin:0;color:var(--purple-dark);font-weight:800}
-    body .shop-note{background:transparent;border:0;border-left:3px solid #e4c85f;border-radius:0;padding:7px 12px;margin:14px 0;font-size:.86rem;color:var(--muted);box-shadow:none}
     .breadcrumbs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 16px;font-size:.88rem;color:#746878}
     .breadcrumbs a{color:var(--purple-dark);font-weight:800;text-decoration:none}
     .breadcrumbs a:hover{text-decoration:underline}
     .btn:focus-visible,.nav-links a:focus-visible,.breadcrumbs a:focus-visible{outline:3px solid rgba(138,91,213,.28);outline-offset:3px}
-    .inline-affiliate-note{font-size:.82rem;color:var(--muted);margin:10px 0 16px}
     @media(max-width:640px){a.btn[href*="amazon.com"],a.btn[href*="amzn.to"]{width:100%}}
   `;
   document.head.appendChild(style);
@@ -195,6 +193,19 @@ if (footerLegal && !footerLegal.textContent.includes('Amazon Associate')) {
   footerLegal.innerHTML = `As an Amazon Associate I earn from qualifying purchases. ${footerLegal.innerHTML}`;
 }
 
+// Keep full affiliate disclosure boxes out of article intros. Move them to the
+// footer consistently across all monetized guides, where the sitewide Amazon
+// disclosure already appears as well.
+document.querySelectorAll('.shop-note').forEach((disclosure) => {
+  if (!footerLegal || disclosure.closest('.footer')) return;
+
+  const footerDisclosure = document.createElement('div');
+  footerDisclosure.className = 'legal';
+  footerDisclosure.innerHTML = '<strong>Affiliate disclosure:</strong> This page contains Amazon affiliate links. As an Amazon Associate I earn from qualifying purchases, at no extra cost to you. Prices and availability can change. <a href="disclosure.html">Learn more</a>.';
+  footerLegal.before(footerDisclosure);
+  disclosure.remove();
+});
+
 // Add consistent breadcrumbs to deep editorial guides that did not originally
 // have them. The Grandma's House checklist already includes its own breadcrumb.
 const breadcrumbMap = {
@@ -255,34 +266,15 @@ if (crumbs && article && !article.querySelector('.breadcrumbs')) {
   article.prepend(nav);
 }
 
-// On the Grandma's House checklist, keep the full disclosure out of the intro,
-// while retaining a compact disclosure right above the product picks.
+// Keep the first Grandma's House recommendation visibly distinguished without
+// using a different Amazon button style.
 if (window.location.pathname.endsWith('/things-to-keep-at-grandmas-house.html')) {
-  const disclosure = document.querySelector('.shop-note');
-  const checklistFooterLegal = document.querySelector('.footer .legal');
   const featuredCard = document.querySelector('.essentials .essential');
-  const quickPicksHeading = document.querySelector('#quick-picks');
-
   if (featuredCard && !featuredCard.querySelector('.badge')) {
     const badge = document.createElement('span');
     badge.className = 'badge';
     badge.textContent = 'Featured pick';
     featuredCard.prepend(badge);
-  }
-
-  if (quickPicksHeading && !document.querySelector('.inline-affiliate-note')) {
-    const note = document.createElement('p');
-    note.className = 'inline-affiliate-note';
-    note.textContent = 'Some product links below are Amazon affiliate links. As an Amazon Associate I earn from qualifying purchases.';
-    quickPicksHeading.insertAdjacentElement('afterend', note);
-  }
-
-  if (disclosure && checklistFooterLegal) {
-    const footerDisclosure = document.createElement('div');
-    footerDisclosure.className = 'legal';
-    footerDisclosure.innerHTML = '<strong>Affiliate disclosure:</strong> This page contains Amazon affiliate links. As an Amazon Associate I earn from qualifying purchases, at no extra cost to you. Prices and availability can change. <a href="disclosure.html">Learn more</a>.';
-    checklistFooterLegal.before(footerDisclosure);
-    disclosure.remove();
   }
 }
 
