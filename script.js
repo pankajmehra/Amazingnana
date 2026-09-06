@@ -34,6 +34,7 @@
     .breadcrumbs a{color:var(--purple-dark);font-weight:800;text-decoration:none}
     .breadcrumbs a:hover{text-decoration:underline}
     .btn:focus-visible,.nav-links a:focus-visible,.breadcrumbs a:focus-visible{outline:3px solid rgba(138,91,213,.28);outline-offset:3px}
+    .inline-affiliate-note{font-size:.82rem;color:var(--muted);margin:10px 0 16px}
     @media(max-width:640px){a.btn[href*="amazon.com"],a.btn[href*="amzn.to"]{width:100%}}
   `;
   document.head.appendChild(style);
@@ -71,8 +72,30 @@
 
   const logoUrl = `${window.location.origin}/assets/favicon.svg`;
   const canonicalUrl = canonical.href;
+  const jsonLdScripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
 
-  document.querySelectorAll('script[type="application/ld+json"]').forEach((script) => {
+  // Category and utility pages that had no schema now receive a simple WebPage
+  // definition. This keeps the site machine-readable without changing content.
+  if (jsonLdScripts.length === 0) {
+    const schema = document.createElement('script');
+    schema.type = 'application/ld+json';
+    schema.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: document.title.replace(/\s*\|\s*Amazing Nana.*$/, ''),
+      url: canonicalUrl,
+      description,
+      isPartOf: {
+        '@type': 'WebSite',
+        name: 'Amazing Nana',
+        url: `${window.location.origin}/`
+      }
+    });
+    document.head.appendChild(schema);
+    jsonLdScripts.push(schema);
+  }
+
+  jsonLdScripts.forEach((script) => {
     try {
       const data = JSON.parse(script.textContent);
       let changed = false;
@@ -232,19 +255,26 @@ if (crumbs && article && !article.querySelector('.breadcrumbs')) {
   article.prepend(nav);
 }
 
-// On the Grandma's House checklist, keep the main article visually clean by
-// moving the larger affiliate disclosure to the footer area and marking the
-// first recommendation as the featured pick.
+// On the Grandma's House checklist, keep the full disclosure out of the intro,
+// while retaining a compact disclosure right above the product picks.
 if (window.location.pathname.endsWith('/things-to-keep-at-grandmas-house.html')) {
   const disclosure = document.querySelector('.shop-note');
   const checklistFooterLegal = document.querySelector('.footer .legal');
   const featuredCard = document.querySelector('.essentials .essential');
+  const quickPicksHeading = document.querySelector('#quick-picks');
 
   if (featuredCard && !featuredCard.querySelector('.badge')) {
     const badge = document.createElement('span');
     badge.className = 'badge';
     badge.textContent = 'Featured pick';
     featuredCard.prepend(badge);
+  }
+
+  if (quickPicksHeading && !document.querySelector('.inline-affiliate-note')) {
+    const note = document.createElement('p');
+    note.className = 'inline-affiliate-note';
+    note.textContent = 'Some product links below are Amazon affiliate links. As an Amazon Associate I earn from qualifying purchases.';
+    quickPicksHeading.insertAdjacentElement('afterend', note);
   }
 
   if (disclosure && checklistFooterLegal) {
