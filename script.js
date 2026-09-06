@@ -39,6 +39,80 @@
   document.head.appendChild(style);
 })();
 
+// Fill in metadata that a few of the older pages did not originally include.
+// Existing hand-written metadata always wins; these are fallbacks only.
+(function ensureMetadataConsistency() {
+  const description = document.querySelector('meta[name="description"]')?.content || '';
+  const firstImage = document.querySelector('.page-photo img,.hero-photo img,.product-image img')?.src || '';
+
+  const ensureMeta = (selector, attrs) => {
+    if (document.head.querySelector(selector)) return;
+    const meta = document.createElement('meta');
+    Object.entries(attrs).forEach(([key, value]) => meta.setAttribute(key, value));
+    document.head.appendChild(meta);
+  };
+
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement('link');
+    canonical.rel = 'canonical';
+    canonical.href = `${window.location.origin}${window.location.pathname}`;
+    document.head.appendChild(canonical);
+  }
+
+  ensureMeta('meta[name="robots"]', { name: 'robots', content: 'index,follow,max-image-preview:large' });
+  ensureMeta('meta[property="og:type"]', { property: 'og:type', content: document.querySelector('script[type="application/ld+json"]')?.textContent.includes('Recipe') ? 'article' : 'website' });
+  ensureMeta('meta[property="og:title"]', { property: 'og:title', content: document.title });
+  if (description) ensureMeta('meta[property="og:description"]', { property: 'og:description', content: description });
+  ensureMeta('meta[property="og:url"]', { property: 'og:url', content: canonical.href });
+  if (firstImage) ensureMeta('meta[property="og:image"]', { property: 'og:image', content: firstImage });
+  ensureMeta('meta[property="og:site_name"]', { property: 'og:site_name', content: 'Amazing Nana' });
+  ensureMeta('meta[name="twitter:card"]', { name: 'twitter:card', content: firstImage ? 'summary_large_image' : 'summary' });
+
+  const logoUrl = `${window.location.origin}/assets/favicon.svg`;
+  const canonicalUrl = canonical.href;
+
+  document.querySelectorAll('script[type="application/ld+json"]').forEach((script) => {
+    try {
+      const data = JSON.parse(script.textContent);
+      let changed = false;
+
+      const enrich = (node) => {
+        if (!node || typeof node !== 'object') return;
+        if (Array.isArray(node)) {
+          node.forEach(enrich);
+          return;
+        }
+
+        if (node['@type'] === 'Recipe') {
+          if (!node.image && firstImage) { node.image = firstImage; changed = true; }
+          if (!node.author) { node.author = { '@type': 'Organization', name: 'Amazing Nana' }; changed = true; }
+          if (!node.datePublished) { node.datePublished = '2026-09-06'; changed = true; }
+          if (!node.dateModified) { node.dateModified = '2026-09-06'; changed = true; }
+          if (!node.mainEntityOfPage) { node.mainEntityOfPage = canonicalUrl; changed = true; }
+        }
+
+        if (node['@type'] === 'Organization' && !node.logo) {
+          node.logo = { '@type': 'ImageObject', url: logoUrl };
+          changed = true;
+        }
+
+        if (node.publisher && typeof node.publisher === 'object' && !node.publisher.logo) {
+          node.publisher.logo = { '@type': 'ImageObject', url: logoUrl };
+          changed = true;
+        }
+
+        Object.values(node).forEach(enrich);
+      };
+
+      enrich(data);
+      if (changed) script.textContent = JSON.stringify(data);
+    } catch (_) {
+      // Leave any hand-written JSON-LD untouched if it cannot be parsed.
+    }
+  });
+})();
+
 const toggle = document.querySelector('.nav-toggle');
 const links = document.querySelector('.nav-links');
 
