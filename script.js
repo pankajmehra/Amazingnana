@@ -47,6 +47,21 @@ document.querySelectorAll('[data-year]').forEach((el) => {
   el.textContent = new Date().getFullYear();
 });
 
+// On the Grandma's House checklist, keep the main article visually clean by
+// moving the larger affiliate disclosure to the footer area.
+if (window.location.pathname.endsWith('/things-to-keep-at-grandmas-house.html')) {
+  const disclosure = document.querySelector('.shop-note');
+  const footerLegal = document.querySelector('.footer .legal');
+
+  if (disclosure && footerLegal) {
+    const footerDisclosure = document.createElement('div');
+    footerDisclosure.className = 'legal';
+    footerDisclosure.innerHTML = '<strong>Affiliate disclosure:</strong> This page contains Amazon affiliate links. As an Amazon Associate I earn from qualifying purchases, at no extra cost to you. Prices and availability can change. <a href="disclosure.html">Learn more</a>.';
+    footerLegal.before(footerDisclosure);
+    disclosure.remove();
+  }
+}
+
 // Track monetization clicks in GA4 so we can see which page, category and product
 // produces buying intent before Amazon reports a commission.
 document.addEventListener('click', (event) => {
