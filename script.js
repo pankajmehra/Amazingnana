@@ -32,7 +32,17 @@
     .breadcrumbs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 16px;font-size:.88rem;color:#746878}
     .breadcrumbs a{color:var(--purple-dark);font-weight:800;text-decoration:none}
     .breadcrumbs a:hover{text-decoration:underline}
-    .btn:focus-visible,.nav-links a:focus-visible,.breadcrumbs a:focus-visible{outline:3px solid rgba(138,91,213,.28);outline-offset:3px}
+
+    /* Pills now have two clear meanings: links look clickable; labels do not. */
+    .kicker-row .kicker:not(a){background:rgba(138,91,213,.08);border:0;box-shadow:none;color:#6f6476;cursor:default;padding:7px 11px}
+    .kicker-row a.kicker{background:#fff;border:1px solid var(--line);box-shadow:0 5px 14px rgba(116,69,117,.07);color:var(--purple-dark);cursor:pointer;text-decoration:none;padding:8px 12px}
+    .kicker-row a.kicker::after{content:'›';font-size:1.05em;margin-left:3px}
+    .kicker-row a.kicker:hover{border-color:#d6bde6;box-shadow:0 8px 18px rgba(116,69,117,.11);transform:translateY(-1px)}
+
+    /* Eyebrows are section labels, not buttons. */
+    .eyebrow{background:transparent;border:0;border-left:3px solid var(--pink);border-radius:0;box-shadow:none;padding:2px 0 2px 9px;cursor:default}
+
+    .btn:focus-visible,.nav-links a:focus-visible,.breadcrumbs a:focus-visible,.kicker-row a.kicker:focus-visible{outline:3px solid rgba(138,91,213,.28);outline-offset:3px}
     @media(max-width:640px){a.btn[href*="amazon.com"],a.btn[href*="amzn.to"]{width:100%}}
   `;
   document.head.appendChild(style);
@@ -72,8 +82,6 @@
   const canonicalUrl = canonical.href;
   const jsonLdScripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
 
-  // Category and utility pages that had no schema now receive a simple WebPage
-  // definition. This keeps the site machine-readable without changing content.
   if (jsonLdScripts.length === 0) {
     const schema = document.createElement('script');
     schema.type = 'application/ld+json';
@@ -164,15 +172,86 @@ if (toggle && links) {
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      closeMenu();
-    }
+    if (event.key === 'Escape') closeMenu();
   });
 }
 
 document.querySelectorAll('[data-year]').forEach((el) => {
   el.textContent = new Date().getFullYear();
 });
+
+// Turn only meaningful navigation pills into real links. All other kicker pills
+// remain informational and are styled as labels rather than buttons.
+(function makeKickerNavigationFunctional() {
+  const path = window.location.pathname || '/';
+  const maps = {
+    '/finds.html': {
+      'Games': 'best-games-for-grandkids-at-grandmas-house.html',
+      'Grandma-house basics': 'things-to-keep-at-grandmas-house.html',
+      'Kitchen': 'easy-recipes-to-make-with-grandkids.html',
+      'Gifts': 'grandma-gifts.html'
+    },
+    '/grandkids.html': {
+      'Activities': 'things-to-do-with-grandkids.html',
+      'Games': 'best-games-for-grandkids-at-grandmas-house.html',
+      'Recipes': 'easy-recipes-to-make-with-grandkids.html',
+      'Traditions': 'things-to-do-with-grandkids.html'
+    },
+    '/grandma-gifts.html': {
+      'Christmas': 'christmas-gifts-for-grandma.html',
+      'Birthdays': 'gifts-for-grandma-from-grandkids.html',
+      'Mother’s Day': 'gifts-for-grandma-from-grandkids.html',
+      'Just because': 'gifts-for-grandma-from-grandkids.html'
+    },
+    '/things-to-do-with-grandkids.html': {
+      'Indoor fun': '#easy-indoor-activities',
+      'Outdoor ideas': '#outdoor-ideas',
+      'Rainy days': '#easy-indoor-activities',
+      'Older kids too': '#ideas-for-older-grandkids-and-teens'
+    },
+    '/gifts-for-grandma-from-grandkids.html': {
+      'Sentimental': '#sentimental-gifts-grandma-can-keep',
+      'Useful': '#useful-gifts-that-still-feel-special',
+      'Homemade': '#homemade-gifts-from-younger-grandkids',
+      'Experience gifts': '#experience-gifts'
+    },
+    '/easy-recipes-to-make-with-grandkids.html': {
+      'Baking': 'nanas-chocolate-chip-cookies.html',
+      'Breakfast': 'fluffy-buttermilk-pancakes.html',
+      'No-bake': 'no-bake-peanut-butter-oat-bites.html',
+      'Kid-helper friendly': 'recipes.html'
+    }
+  };
+
+  // Add stable anchors to article section headings so in-page pills work.
+  const slugify = (text) => text
+    .toLowerCase()
+    .replace(/[’']/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  document.querySelectorAll('main h2').forEach((heading) => {
+    if (!heading.id) heading.id = slugify(heading.textContent.trim());
+    heading.style.scrollMarginTop = '96px';
+  });
+
+  const pageMap = maps[path];
+  if (!pageMap) return;
+
+  document.querySelectorAll('.kicker-row .kicker').forEach((pill) => {
+    if (pill.tagName === 'A') return;
+    const label = pill.textContent.trim();
+    const href = pageMap[label];
+    if (!href) return;
+
+    const link = document.createElement('a');
+    link.className = pill.className;
+    link.href = href;
+    link.textContent = label;
+    link.setAttribute('aria-label', `Go to ${label}`);
+    pill.replaceWith(link);
+  });
+})();
 
 // Keep Amazon shopping calls-to-action visually and technically consistent.
 document.querySelectorAll('a.btn[href*="amazon.com"], a.btn[href*="amzn.to"]').forEach((button) => {
@@ -194,8 +273,7 @@ if (footerLegal && !footerLegal.textContent.includes('Amazon Associate')) {
 }
 
 // Keep full affiliate disclosure boxes out of article intros. Move them to the
-// footer consistently across all monetized guides, where the sitewide Amazon
-// disclosure already appears as well.
+// footer consistently across all monetized guides.
 document.querySelectorAll('.shop-note').forEach((disclosure) => {
   if (!footerLegal || disclosure.closest('.footer')) return;
 
