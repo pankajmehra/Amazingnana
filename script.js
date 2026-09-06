@@ -22,6 +22,7 @@ const toggle = document.querySelector('.nav-toggle');
 const links = document.querySelector('.nav-links');
 
 if (toggle && links) {
+  toggle.setAttribute('aria-expanded', 'false');
   toggle.addEventListener('click', () => {
     const isOpen = links.classList.toggle('open');
     toggle.setAttribute('aria-expanded', String(isOpen));
@@ -46,7 +47,8 @@ document.querySelectorAll('[data-year]').forEach((el) => {
   el.textContent = new Date().getFullYear();
 });
 
-// Track Amazon affiliate-link clicks as a GA4 custom event.
+// Track monetization clicks in GA4 so we can see which page, category and product
+// produces buying intent before Amazon reports a commission.
 document.addEventListener('click', (event) => {
   const link = event.target.closest('a[href]');
   if (!link || typeof window.gtag !== 'function') return;
@@ -57,9 +59,12 @@ document.addEventListener('click', (event) => {
   if (isAmazonAffiliate) {
     window.gtag('event', 'affiliate_click', {
       affiliate_network: 'Amazon',
+      product_name: link.dataset.product || (link.textContent || '').trim(),
+      affiliate_category: link.dataset.affiliateCategory || 'unspecified',
       link_url: href,
       link_text: (link.textContent || '').trim(),
-      page_path: window.location.pathname
+      page_path: window.location.pathname,
+      page_title: document.title
     });
   }
 });
